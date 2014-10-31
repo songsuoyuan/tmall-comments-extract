@@ -22,7 +22,6 @@ def request(url, **kw):
     ...'
     
     """
-
     req = urllib2.Request(parse_url(url, **kw))
     req.add_header('Accept-Language', 'zh-CN,zh')
     response = urllib2.urlopen(req)
@@ -124,8 +123,11 @@ def scratch_source(product_id, shop_id, pages=1):
         """
         convert json text from request(url, **kw) to python list
         """
-
         def obj_hook(dic):
+            """
+            delete meaningless attributes anf convert annoying unicode 
+            string to utf-8
+            """
             o = dict()
             for k, v in dic.iteritems():
                 if k in [ u'aliMallSeller', u'appendComment', u'attributes',
