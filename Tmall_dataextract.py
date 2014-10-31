@@ -66,5 +66,5 @@ def Tmall_searchandreview(search_content,data_path,search_max_pages=100,review_m
 
 
 
-Tmall_searchandreview('移动电源', 'C:/data/', 2)
+Tmall_searchandreview('移动电源', '/Users/SONG/Desktop/GitHub/tmall', 2)
 	
