@@ -3,8 +3,11 @@
 
 import re
 import json
+import time
+import random
 import urllib
 import urllib2
+import MySQLdb
 import sys
 reload(sys)
 sys.setdefaultencoding("utf-8")
@@ -152,19 +155,91 @@ def scratch_source(product_id, shop_id, pages=1):
     res   = request(RATE, **d)
     total = re.search('"total":(\d*)', res).groups()[0]
     l = clean(res)
-    max_pages = min(pages, int(total)/20)
+    max_pages = min(pages, int(total)/20+1)
     for i in range(2, max_pages):
         print 'downloading page', i, '...'
         d['currentPage'] = i
         res = request(RATE, **d)
-        l  += clean(res)
+        n   = clean(res)
+        if len(n) == 0:
+            print 'no more comments, stopped at page', i, '...'
+            break
+        l = l + n
     return l
 
 
 # test code:
 # ---------
-l = scratch_source(41610740393, 713805254, 25)
-print len(l)
-print l[418]
-print l[418]['rateContent']
 
+# initial
+# ---------
+db = MySQLdb.connect("localhost","Suoyuan","jiayuan","test")
+cursor = db.cursor()
+cursor.execute("set names utf8;")
+
+l = scratch_list(2)
+for k in l:
+    t = random.randint(1, 5)
+    print 'sleep', t, 'second...'
+    time.sleep(t)
+    print 'scratch product id ', k , 'from', l[k][2], '...'
+    product_id = k
+    shop_id = l[k][1]
+    li = scratch_source(product_id, shop_id, 100)
+    for d in li:
+        sql = """INSERT INTO comment_list(ID, IS_ANONY, USERNAME, 
+        LEVEL, RATE_SUM, CONTENT, REPLY, SWEET, RATE_DATE, MODEL, 
+        PRODUCT_ID, SHOP_ID)
+        VALUES ('%s',%s,'%s','%s',%s,'%s','%s',%s,'%s','%s','%s','%s') 
+        """ % (d['id'], d['anony'], d['displayUserNick'], 
+               d['displayRatePic'], d['displayRateSum'], 
+               d['rateContent'], d['reply'], d['tamllSweetLevel'],
+               d['rateDate'], d['auctionSku'], product_id, shop_id)
+        cursor.execute(sql)
+        db.commit()
+
+db.close()
+
+
+# test comment_list
+# ------
+# l = scratch_source(27465092661, 263726286, 30)
+# print len(l)
+# 
+# db = MySQLdb.connect("localhost","Suoyuan","jiayuan","test")
+# cursor = db.cursor()
+# cursor.execute("set names utf8;")
+# 
+# for d in l:
+#     sql = """INSERT INTO comment_list(ID, IS_ANONY, USERNAME, 
+#     LEVEL, RATE_SUM, CONTENT, REPLY, SWEET, RATE_DATE, MODEL, 
+#     PRODUCT_ID, SHOP_ID)
+#     VALUES ('%s',%s,'%s','%s',%s,'%s','%s',%s,'%s','%s','%s','%s') 
+#     """ % (d['id'], d['anony'], d['displayUserNick'], 
+#            d['displayRatePic'], d['displayRateSum'], 
+#            d['rateContent'], d['reply'], d['tamllSweetLevel'],
+#            d['rateDate'], d['auctionSku'], 41610740393, 713805254)
+#     cursor.execute(sql)
+#     db.commit()
+# 
+# db.close()
+
+
+# test shop_list
+# ------
+# print l[418]['rateContent']
+
+# db = MySQLdb.connect("localhost","Suoyuan","jiayuan","test")
+# cursor = db.cursor()
+# cursor.execute("set names utf8;")
+# 
+# d = scratch_list(2)
+# for k in d:
+#     sql = """INSERT INTO shop_list(PRODUCT_ID,
+#              PRODUCT_NAME, SHOP_ID, SHOP_NAME, SEARCH_KEYWORD)
+#              VALUES ('%s', '%s', '%s', '%s', '%s') """ % (k, 
+#              d[k][0], d[k][1], d[k][2], '苹果手机')
+#     cursor.execute(sql)
+#     db.commit()
+# 
+# db.close()
